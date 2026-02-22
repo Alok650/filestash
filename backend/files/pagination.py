@@ -16,8 +16,10 @@ class FileVaultCursorPagination(CursorPagination):
     page_size_query_param = 'page_size'
     ordering = '-uploaded_at'  # default; view/OrderingFilter may override
 
-    # Captured in paginate_queryset() so get_paginated_response() can COUNT it.
-    _full_queryset = None
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Captured in paginate_queryset() so get_paginated_response() can COUNT it.
+        self._full_queryset = None
 
     def get_page_size(self, request):
         """Clamp page_size to [1, max_page_size] instead of raising on bad input."""

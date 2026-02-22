@@ -130,8 +130,8 @@ def get_file_by_hash(sha256_hash: str) -> Optional[File]:
     return File.objects.filter(sha256_hash=sha256_hash).first()
 
 
-def get_duplicates_for_key(file: File, api_key: Optional[ApiKey]) -> QuerySet:
-    """Return Files owned by *api_key* that share *file*'s hash, excluding *file* itself.
+def get_duplicates_for_key(file: File) -> QuerySet:
+    """Return Files that share *file*'s hash and owner, excluding *file* itself.
 
     Returns an empty queryset when *file* has no sha256_hash (NULL hashes must
     not be treated as matching each other).
@@ -140,7 +140,7 @@ def get_duplicates_for_key(file: File, api_key: Optional[ApiKey]) -> QuerySet:
         return File.objects.none()
     return File.objects.filter(
         sha256_hash=file.sha256_hash,
-        api_key=api_key,
+        api_key=file.api_key,
     ).exclude(pk=file.pk)
 
 

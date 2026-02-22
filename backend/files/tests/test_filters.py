@@ -8,12 +8,11 @@ date range filters, and invalid datetime validation errors.
 import datetime
 
 from django.test import TestCase
-from rest_framework.test import APITestCase
 
 from files import repository
 from files.models import File
 
-from .helpers import VALID_MIME, make_file, make_uploaded_file
+from .helpers import VALID_MIME, APITestCase, make_file, make_uploaded_file
 
 FILES_URL = '/api/files/'
 

@@ -5,9 +5,7 @@ Covers: valid/invalid ordering fields, ordering direction, stable cursor orderin
 with id tiebreaker, and composed filter + ordering + pagination requests.
 """
 
-from rest_framework.test import APITestCase
-
-from .helpers import make_file
+from .helpers import APITestCase, make_file
 
 FILES_URL = '/api/files/'
 

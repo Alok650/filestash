@@ -391,7 +391,7 @@ class GetDuplicatesForKeyTests(TestCase):
         f1 = make_file(api_key=key, sha256_hash='1' * 64, name='a.txt')
         f2 = make_file(api_key=key, sha256_hash='1' * 64, name='b.txt')
         f3 = make_file(api_key=key, sha256_hash='1' * 64, name='c.txt')
-        dupes = list(repository.get_duplicates_for_key(f1, key))
+        dupes = list(repository.get_duplicates_for_key(f1))
         self.assertIn(f2, dupes)
         self.assertIn(f3, dupes)
         self.assertNotIn(f1, dupes)
@@ -401,12 +401,12 @@ class GetDuplicatesForKeyTests(TestCase):
         key2, _ = make_api_key(label='k2')
         f1 = make_file(api_key=key1, sha256_hash='2' * 64)
         make_file(api_key=key2, sha256_hash='2' * 64)
-        self.assertEqual(list(repository.get_duplicates_for_key(f1, key1)), [])
+        self.assertEqual(list(repository.get_duplicates_for_key(f1)), [])
 
     def test_returns_empty_when_no_duplicates(self):
         key, _ = make_api_key()
         f = make_file(api_key=key, sha256_hash='3' * 64)
-        self.assertEqual(repository.get_duplicates_for_key(f, key).count(), 0)
+        self.assertEqual(repository.get_duplicates_for_key(f).count(), 0)
 
     def test_null_hash_returns_empty_queryset(self):
         key, _ = make_api_key()
@@ -418,7 +418,7 @@ class GetDuplicatesForKeyTests(TestCase):
             file_field=make_uploaded_file(), original_filename='y.txt',
             file_type=VALID_MIME, size=5, sha256_hash=None, api_key=key,
         )
-        self.assertEqual(repository.get_duplicates_for_key(f1, key).count(), 0)
+        self.assertEqual(repository.get_duplicates_for_key(f1).count(), 0)
 
 
 class CountReferencesTests(TestCase):

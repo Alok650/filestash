@@ -5,11 +5,9 @@ Covers: sha256_hash present in list and detail responses,
 null sha256_hash, and read-only enforcement via PATCH.
 """
 
-from rest_framework.test import APITestCase
-
 from files import repository
 
-from .helpers import VALID_MIME, make_file, make_uploaded_file
+from .helpers import VALID_MIME, APITestCase, make_file, make_uploaded_file
 
 FILES_URL = '/api/files/'
 

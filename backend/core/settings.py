@@ -23,6 +23,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-default-key-for-development')
 
+# Admin API key — required to create / deactivate API keys.  Set via env var.
+ADMIN_API_KEY = os.environ.get('ADMIN_API_KEY', '')
+
+# Storage quota for anonymous (unauthenticated) uploads, in megabytes.
+ANONYMOUS_STORAGE_QUOTA_MB = int(os.environ.get('ANONYMOUS_STORAGE_QUOTA_MB', '100'))
+
+# Maximum size of a single file upload in bytes (default 50 MB).
+# This causes Django to reject oversized requests before the view runs.
+MAX_UPLOAD_SIZE_MB = int(os.environ.get('MAX_UPLOAD_SIZE_MB', '50'))
+DATA_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_SIZE_MB * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_SIZE_MB * 1024 * 1024
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
@@ -46,6 +58,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
   "django.middleware.security.SecurityMiddleware",
   "whitenoise.middleware.WhiteNoiseMiddleware",
+  "files.middleware.RateLimitHeadersMiddleware",
   "django.contrib.sessions.middleware.SessionMiddleware",
   "django.middleware.common.CommonMiddleware",
   "django.middleware.csrf.CsrfViewMiddleware",
@@ -133,11 +146,29 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# In-memory cache for rate-limit counters (suitable for single-process dev/test).
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'rate-limit-cache',
+    }
+}
+
 # REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny'
+        'rest_framework.permissions.AllowAny',
     ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'files.authentication.ApiKeyAuthentication',
+    ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'files.throttling.ApiKeySecondRateThrottle',
+        'files.throttling.ApiKeyMinuteRateThrottle',
+    ],
+    # NOTE: rates are defined as class attributes on ApiKeySecondRateThrottle /
+    # ApiKeyMinuteRateThrottle in files/throttling.py, not read from here.
+    'DEFAULT_THROTTLE_RATES': {},
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.JSONParser',
         'rest_framework.parsers.MultiPartParser',
@@ -145,4 +176,5 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'files.pagination.FileVaultCursorPagination',
     'PAGE_SIZE': 20,
+    'EXCEPTION_HANDLER': 'files.exception_handlers.custom_exception_handler',
 }

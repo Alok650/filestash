@@ -5,9 +5,7 @@ Covers: response envelope shape, cursor navigation, page_size clamping,
 and count reflecting the filtered (not overall) total.
 """
 
-from rest_framework.test import APITestCase
-
-from .helpers import make_file
+from .helpers import APITestCase, make_file
 
 FILES_URL = '/api/files/'
 

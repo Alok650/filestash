@@ -12,12 +12,11 @@ import os
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
-from rest_framework.test import APITestCase
 
 from files import repository
 from files.utils import compute_sha256
 
-from .helpers import make_file, make_uploaded_file
+from .helpers import APITestCase, make_file, make_uploaded_file
 
 FILES_URL = '/api/files/'
 
@@ -236,7 +235,7 @@ class DuplicatesKeyIsolationTests(TestCase):
         )
 
         # Key A's duplicates should not include Key B's file
-        dup_qs = repository.get_duplicates_for_key(file_a, key_a)
+        dup_qs = repository.get_duplicates_for_key(file_a)
         self.assertEqual(dup_qs.count(), 0)
         self.assertNotIn(file_b.pk, dup_qs.values_list('pk', flat=True))
 
@@ -264,7 +263,7 @@ class DuplicatesKeyIsolationTests(TestCase):
             api_key=key,
         )
 
-        dup_qs = repository.get_duplicates_for_key(file_1, key)
+        dup_qs = repository.get_duplicates_for_key(file_1)
         self.assertEqual(dup_qs.count(), 1)
         self.assertIn(file_2.pk, dup_qs.values_list('pk', flat=True))
 

@@ -58,6 +58,7 @@ class File(models.Model):
         # normal operation so this guard is never triggered in practice.
         on_delete=models.PROTECT,
         related_name='files',
+        verbose_name="API key",
     )
 
     class Meta:
