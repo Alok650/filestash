@@ -39,6 +39,7 @@ INSTALLED_APPS = [
   "django.contrib.messages",
   "django.contrib.staticfiles",
   "rest_framework",
+  "django_filters",
   "files",
 ]
 
@@ -142,4 +143,6 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.MultiPartParser',
         'rest_framework.parsers.FormParser',
     ],
+    'DEFAULT_PAGINATION_CLASS': 'files.pagination.FileVaultCursorPagination',
+    'PAGE_SIZE': 20,
 }

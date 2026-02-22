@@ -23,41 +23,35 @@ Before you begin, ensure you have installed:
 
 ## 🛠️ Installation & Setup
 
-### Using Docker (Recommended)
+### Quick start (Makefile)
+
+Requires **Python 3.11+** and **make**.
+
+```bash
+make setup       # create venv, install deps, run migrations
+make run         # start dev server at http://localhost:8000
+make test        # run full test suite
+```
+
+Run `make help` to see all available targets.
+
+### Using Docker
 
 ```bash
 docker-compose up --build
 ```
 
-### Local Development Setup
+### Manual setup
 
-#### Backend Setup
-1. **Create and activate virtual environment**
-   ```bash
-   cd backend
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Create necessary directories**
-   ```bash
-   mkdir -p media staticfiles data
-   ```
-
-4. **Run migrations**
-   ```bash
-   python manage.py migrate
-   ```
-
-5. **Start the development server**
-   ```bash
-   python manage.py runserver
-   ```
+```bash
+cd backend
+python3.11 -m venv venv
+source venv/bin/activate      # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+mkdir -p data media staticfiles
+python manage.py migrate
+python manage.py runserver
+```
 
 ## 🌐 Accessing the Application
 
@@ -90,6 +84,35 @@ docker-compose up --build
 
 #### Download File
 - Access file directly through the file URL provided in metadata
+
+## 🧪 Running Tests
+
+Tests use Python's standard `unittest` framework via Django's test runner. All test modules live under `backend/files/tests/`, one file per source module.
+
+```bash
+# Via Makefile (recommended)
+make test                                                    # entire suite
+make test-module MOD=test_repository                         # one module
+make test-class  CLS=test_pagination.PaginationEnvelopeTests # one class
+make test-method M=test_pagination.PaginationEnvelopeTests.test_default_page_size_is_20
+
+# Directly (from backend/ with venv active)
+python manage.py test files
+python manage.py test files.tests.test_repository
+python manage.py test files.tests.test_pagination.PaginationEnvelopeTests
+python manage.py test files.tests.test_pagination.PaginationEnvelopeTests.test_default_page_size_is_20
+```
+
+### Test modules
+
+| File | Source module | What's covered |
+|------|--------------|----------------|
+| `tests/test_crypto.py` | `crypto.py` | `hash_api_key()` — output format, determinism, collision resistance |
+| `tests/test_repository.py` | `repository.py` | ApiKey + File CRUD, dedup helpers, quota aggregation, reference-counted deletion |
+| `tests/test_pagination.py` | `pagination.py` | Cursor envelope shape, cursor navigation, page_size clamping, filtered count |
+| `tests/test_filters.py` | `filters.py` | Filename search, file_type exact/prefix, date range, invalid datetime → 400 |
+| `tests/test_views.py` | `views.py` | Ordering validation (valid fields, 400 on invalid, error format), composability |
+| `tests/test_serializers.py` | `serializers.py` | `sha256_hash` in list/detail responses, null hash, read-only enforcement |
 
 ## 🗄️ Project Structure
 

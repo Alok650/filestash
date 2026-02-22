@@ -108,13 +108,35 @@ backend/
 
 ## 🧪 Testing
 
+Tests use Python's standard `unittest` framework via Django's test runner. All test modules live under `files/tests/`, one file per source module.
+
 ```bash
-# Run all tests
+# Run the entire test suite
 python manage.py test
 
-# Run specific test file
-python manage.py test files.tests
+# Run all tests in the files app
+python manage.py test files
+
+# Run all tests in a single test module
+python manage.py test files.tests.test_repository
+
+# Run a single test class
+python manage.py test files.tests.test_pagination.PaginationEnvelopeTests
+
+# Run a single test method
+python manage.py test files.tests.test_pagination.PaginationEnvelopeTests.test_default_page_size_is_20
 ```
+
+### Test modules
+
+| File | Source module | What's covered |
+|------|--------------|----------------|
+| `tests/test_crypto.py` | `crypto.py` | `hash_api_key()` — output format, determinism, collision resistance |
+| `tests/test_repository.py` | `repository.py` | ApiKey + File CRUD, dedup helpers, quota aggregation, reference-counted deletion |
+| `tests/test_pagination.py` | `pagination.py` | Cursor envelope shape, cursor navigation, page_size clamping, filtered count |
+| `tests/test_filters.py` | `filters.py` | Filename search, file_type exact/prefix, date range, invalid datetime → 400 |
+| `tests/test_views.py` | `views.py` | Ordering validation (valid fields, 400 on invalid, error format), composability |
+| `tests/test_serializers.py` | `serializers.py` | `sha256_hash` in list/detail responses, null hash, read-only enforcement |
 
 ## 🐛 Troubleshooting
 
