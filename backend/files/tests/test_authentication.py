@@ -1,10 +1,3 @@
-"""
-Tests for Phase 4: API key authentication, key management endpoints,
-key-scoped file visibility, and file ownership assignment.
-
-Tasks 4.1, 4.2, 4.3, 4.4.
-"""
-
 from django.test import override_settings
 
 from files import repository

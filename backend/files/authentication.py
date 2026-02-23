@@ -1,14 +1,3 @@
-"""
-ApiKey-based HTTP authentication for Django REST Framework.
-
-Header format:  Authorization: ApiKey <token>
-
-- Token matching settings.ADMIN_API_KEY  → request.auth = ADMIN_AUTH sentinel
-- Token matching an active ApiKey record → request.auth = ApiKey instance
-- No / malformed Authorization header   → request.auth = None  (anonymous)
-- Valid format but unknown/inactive key → 401 AuthenticationFailed
-"""
-
 import hmac
 import logging
 
@@ -28,19 +17,16 @@ class ApiKeyAuthentication(BaseAuthentication):
         auth_header = request.META.get('HTTP_AUTHORIZATION', '')
 
         if not auth_header.startswith(_SCHEME):
-            return None  # no header or wrong scheme — anonymous
+            return None
 
         token = auth_header[len(_SCHEME):]
         if not token:
-            return None  # malformed (no token after scheme) — anonymous
+            return None
 
-        # Admin key check (short-circuit before DB lookup).
-        # Use constant-time comparison to prevent timing side-channel attacks.
         admin_key = getattr(settings, 'ADMIN_API_KEY', '')
         if admin_key and hmac.compare_digest(token, admin_key):
             return (AnonymousUser(), ADMIN_AUTH)
 
-        # Regular API key lookup (hashes the token before querying)
         api_key = get_api_key_by_token(token)
         if api_key:
             return (AnonymousUser(), api_key)
@@ -49,6 +35,5 @@ class ApiKeyAuthentication(BaseAuthentication):
         raise AuthenticationFailed({'error': 'invalid_api_key'})
 
     def authenticate_header(self, request):
-        # Returning a non-empty string keeps DRF's status code as 401 instead
-        # of silently upgrading AuthenticationFailed to 403.
+        # Non-empty string keeps DRF's status as 401 instead of upgrading to 403.
         return 'ApiKey realm="api"'

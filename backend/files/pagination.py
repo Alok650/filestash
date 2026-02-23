@@ -1,11 +1,3 @@
-"""
-Cursor-based pagination for the File Vault API.
-
-Uses DRF's CursorPagination with two additions:
-  - A ``count`` field in every response (total matching records, not just current page)
-  - Page-size clamping (values outside 1–100 are silently clamped, not rejected)
-"""
-
 from rest_framework.pagination import CursorPagination
 from rest_framework.response import Response
 
@@ -14,11 +6,10 @@ class FileVaultCursorPagination(CursorPagination):
     page_size = 20
     max_page_size = 100
     page_size_query_param = 'page_size'
-    ordering = '-uploaded_at'  # default; view/OrderingFilter may override
+    ordering = '-uploaded_at'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Captured in paginate_queryset() so get_paginated_response() can COUNT it.
         self._full_queryset = None
 
     def get_page_size(self, request):
@@ -32,7 +23,6 @@ class FileVaultCursorPagination(CursorPagination):
         return self.page_size
 
     def paginate_queryset(self, queryset, request, view=None):
-        # Capture the full filtered queryset before CursorPagination slices it.
         self._full_queryset = queryset
         return super().paginate_queryset(queryset, request, view)
 

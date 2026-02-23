@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import ApiKey, File
+
+from .models import ApiKey, File, DEFAULT_STORAGE_QUOTA_BYTES
 
 
 class FileSerializer(serializers.ModelSerializer):
@@ -14,13 +15,21 @@ class FileSerializer(serializers.ModelSerializer):
             'id', 'file', 'original_filename', 'file_type',
             'size', 'uploaded_at', 'sha256_hash', 'deduplicated',
         ]
-        read_only_fields = ['id', 'uploaded_at', 'sha256_hash']
+        read_only_fields = ['id', 'file', 'file_type', 'size', 'uploaded_at', 'sha256_hash']
+
+
+class ApiKeyCreateInputSerializer(serializers.Serializer):
+    label = serializers.CharField(max_length=100)
+    storage_quota_bytes = serializers.IntegerField(
+        min_value=1,
+        default=DEFAULT_STORAGE_QUOTA_BYTES,
+    )
 
 
 class ApiKeyCreateSerializer(serializers.ModelSerializer):
-    """Used in POST /api/keys/ response — includes the raw token field."""
+    """Response serializer for POST /api/keys/ — includes the raw token field."""
 
-    key = serializers.CharField()  # raw token supplied by the view
+    key = serializers.CharField()
 
     class Meta:
         model = ApiKey
@@ -28,7 +37,7 @@ class ApiKeyCreateSerializer(serializers.ModelSerializer):
 
 
 class ApiKeyDetailSerializer(serializers.ModelSerializer):
-    """Used in GET /api/keys/me/ response — no key field, adds storage_used_bytes."""
+    """Response serializer for GET /api/keys/me/ — no key field, adds storage_used_bytes."""
 
     storage_used_bytes = serializers.SerializerMethodField()
 

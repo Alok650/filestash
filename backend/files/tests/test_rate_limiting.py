@@ -1,10 +1,3 @@
-"""
-Tests for Phase 4: rate limiting (Tasks 4.5, 4.6) and storage quotas (Task 4.7).
-
-Rate-limit tests mock the throttle's timer to control the window precisely.
-Cache is cleared in setUp to ensure test isolation.
-"""
-
 from unittest.mock import patch
 
 from django.core.cache import cache
@@ -22,10 +15,6 @@ ADMIN_KEY = 'test-admin-key-for-rate-limit'
 # Fixed timestamp used by all throttle timer mocks.
 _T = 1_000_000.0
 
-
-# ---------------------------------------------------------------------------
-# Per-second throttle
-# ---------------------------------------------------------------------------
 
 class AnonymousSecondThrottleTests(APITestCase):
     """Anonymous requests are limited to 2/second."""
@@ -94,10 +83,6 @@ class AdminNotThrottledTests(APITestCase):
             self.assertNotEqual(r.status_code, 429)
 
 
-# ---------------------------------------------------------------------------
-# Rate-limit headers (Task 4.6)
-# ---------------------------------------------------------------------------
-
 class RateLimitHeadersTests(APITestCase):
     """X-RateLimit-* headers are present on successful responses."""
 
@@ -136,10 +121,6 @@ class RateLimitHeadersTests(APITestCase):
         # Retry-After is the 429-specific header
         self.assertIn('Retry-After', r3)
 
-
-# ---------------------------------------------------------------------------
-# Storage quota enforcement (Task 4.7)
-# ---------------------------------------------------------------------------
 
 class AuthenticatedQuotaTests(APITestCase):
     """Authenticated uploads respect the key's storage_quota_bytes."""

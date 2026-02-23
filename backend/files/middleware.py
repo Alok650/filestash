@@ -1,13 +1,3 @@
-"""
-Middleware that injects X-RateLimit-* headers into every API response.
-
-The throttle classes store state on request._rate_limit_info after each
-allowed request.  This middleware reads that state and adds the headers.
-
-No-op when _rate_limit_info is absent (admin requests, static files, etc.).
-"""
-
-
 class RateLimitHeadersMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response

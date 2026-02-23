@@ -1,10 +1,3 @@
-"""
-Tests for files/filters.py — FileFilter and FileVaultFilterBackend.
-
-Covers: filename search, file_type exact/prefix match, uploaded_after/before
-date range filters, and invalid datetime validation errors.
-"""
-
 import datetime
 
 from django.test import TestCase

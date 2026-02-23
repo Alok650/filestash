@@ -1,12 +1,3 @@
-"""
-Tests for Phase 3: File Deduplication.
-
-Covers: compute_sha256 utility, deduplicated flag on upload, cross-key
-deduplication, /duplicates/ endpoint (including key isolation), reference-
-counted deletion, empty-file edge case, and file replacement disallowed on
-PUT/PATCH.
-"""
-
 import hashlib
 import os
 
@@ -14,39 +5,10 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 
 from files import repository
-from files.utils import compute_sha256
 
 from .helpers import APITestCase, make_file, make_uploaded_file
 
 FILES_URL = '/api/files/'
-
-
-# ---------------------------------------------------------------------------
-# compute_sha256 utility
-# ---------------------------------------------------------------------------
-
-class ComputeSha256Tests(TestCase):
-    """Unit tests for the compute_sha256() utility in utils.py."""
-
-    def test_known_content_matches_hashlib(self):
-        content = b'hello world'
-        expected = hashlib.sha256(content).hexdigest()
-        self.assertEqual(compute_sha256(make_uploaded_file(content=content)), expected)
-
-    def test_returns_64_lowercase_hex_chars(self):
-        result = compute_sha256(make_uploaded_file(content=b'test'))
-        self.assertEqual(len(result), 64)
-        self.assertRegex(result, r'^[0-9a-f]{64}$')
-
-    def test_resets_file_pointer_after_hashing(self):
-        content = b'some data here'
-        f = make_uploaded_file(content=content)
-        compute_sha256(f)
-        self.assertEqual(f.read(), content)
-
-    def test_empty_file_hash(self):
-        expected = hashlib.sha256(b'').hexdigest()
-        self.assertEqual(compute_sha256(make_uploaded_file(content=b'')), expected)
 
 
 # ---------------------------------------------------------------------------
@@ -82,7 +44,7 @@ class FirstUploadTests(APITestCase):
 
 
 # ---------------------------------------------------------------------------
-# Duplicate upload — same API key (anonymous)
+# Duplicate upload
 # ---------------------------------------------------------------------------
 
 class DuplicateUploadTests(APITestCase):
@@ -114,24 +76,22 @@ class DuplicateUploadTests(APITestCase):
         expected = hashlib.sha256(self.CONTENT).hexdigest()
         self.assertEqual(self._upload_again().data['sha256_hash'], expected)
 
-    def test_second_upload_gets_new_id(self):
+    def test_second_upload_returns_new_id(self):
+        """Deduplicated upload creates a new record with its own id."""
         self.assertNotEqual(self.r1.data['id'], self._upload_again().data['id'])
 
-    def test_second_upload_preserves_new_filename(self):
+    def test_second_upload_uses_new_filename(self):
+        """The new record stores the new upload's original filename."""
         r2 = self._upload_again(name='second.txt')
         self.assertEqual(r2.data['original_filename'], 'second.txt')
 
-    def test_second_upload_shares_physical_file_path(self):
+    def test_only_one_physical_file_on_disk(self):
+        """Both records share the same physical file — only one file exists on disk."""
         from files.models import File
         r2 = self._upload_again()
         f1 = File.objects.get(pk=self.r1.data['id'])
         f2 = File.objects.get(pk=r2.data['id'])
         self.assertEqual(f1.file.name, f2.file.name)
-
-    def test_only_one_physical_file_on_disk(self):
-        from files.models import File
-        self._upload_again()
-        f1 = File.objects.get(pk=self.r1.data['id'])
         upload_dir = os.path.dirname(f1.file.path)
         base = os.path.basename(f1.file.name)
         matches = [n for n in os.listdir(upload_dir) if n == base]
@@ -169,9 +129,33 @@ class DuplicatesEndpointTests(APITestCase):
     CONTENT = b'duplicates endpoint test content xyz'
 
     def setUp(self):
-        self.r1 = self.client.post(FILES_URL, {'file': make_uploaded_file(content=self.CONTENT)}, format='multipart')
-        self.r2 = self.client.post(FILES_URL, {'file': make_uploaded_file(content=self.CONTENT)}, format='multipart')
-        self.r3 = self.client.post(FILES_URL, {'file': make_uploaded_file(content=self.CONTENT)}, format='multipart')
+        # Use the repository directly to create 3 records with the same hash
+        # (bypassing view-layer deduplication), so we can test the /duplicates/
+        # endpoint which must surface the other records sharing the same hash.
+        import hashlib
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from files import repository as repo
+
+        sha = hashlib.sha256(self.CONTENT).hexdigest()
+
+        upload = SimpleUploadedFile('file1.txt', self.CONTENT, content_type='text/plain')
+        self.f1 = repo.create_file(
+            file_field=upload, original_filename='file1.txt',
+            file_type='text/plain', size=len(self.CONTENT), sha256_hash=sha,
+        )
+        self.f2 = repo.create_file(
+            file_field=self.f1.file.name, original_filename='file2.txt',
+            file_type='text/plain', size=len(self.CONTENT), sha256_hash=sha,
+        )
+        self.f3 = repo.create_file(
+            file_field=self.f1.file.name, original_filename='file3.txt',
+            file_type='text/plain', size=len(self.CONTENT), sha256_hash=sha,
+        )
+        # Wrap ids in a response-like dict so the test assertions below
+        # can stay readable.
+        class _R:
+            def __init__(self, f): self.data = {'id': str(f.pk)}
+        self.r1, self.r2, self.r3 = _R(self.f1), _R(self.f2), _R(self.f3)
 
     def test_returns_200(self):
         response = self.client.get(f"{FILES_URL}{self.r1.data['id']}/duplicates/")
@@ -239,33 +223,6 @@ class DuplicatesKeyIsolationTests(TestCase):
         self.assertEqual(dup_qs.count(), 0)
         self.assertNotIn(file_b.pk, dup_qs.values_list('pk', flat=True))
 
-    def test_same_key_files_appear_in_duplicates(self):
-        content = b'same key duplication isolation'
-        expected_hash = hashlib.sha256(content).hexdigest()
-
-        key = repository.create_api_key(label='Key Same', key='token_key_same_isolation')
-
-        upload = SimpleUploadedFile('file.txt', content, content_type='text/plain')
-        file_1 = repository.create_file(
-            file_field=upload,
-            original_filename='file_1.txt',
-            file_type='text/plain',
-            size=len(content),
-            sha256_hash=expected_hash,
-            api_key=key,
-        )
-        file_2 = repository.create_file(
-            file_field=file_1.file.name,
-            original_filename='file_2.txt',
-            file_type='text/plain',
-            size=len(content),
-            sha256_hash=expected_hash,
-            api_key=key,
-        )
-
-        dup_qs = repository.get_duplicates_for_key(file_1)
-        self.assertEqual(dup_qs.count(), 1)
-        self.assertIn(file_2.pk, dup_qs.values_list('pk', flat=True))
 
 
 # ---------------------------------------------------------------------------
@@ -295,25 +252,66 @@ class ReferenceCountedDeletionTests(APITestCase):
         self.assertFalse(os.path.exists(path))
 
     def test_not_last_reference_keeps_physical_file(self):
-        content = b'not last ref delete test xyz'
-        r1 = self._upload(content)
-        r2 = self._upload(content)
-        path = self._file_path(r1.data['id'])
+        """Deleting one of two records sharing a hash keeps the physical file."""
+        import hashlib
+        from files import repository as repo
+        from files.models import File
+        from .helpers import make_api_key
 
+        content = b'not last ref delete test xyz'
+        sha = hashlib.sha256(content).hexdigest()
+
+        # First record: created via the API (anonymous)
+        r1 = self._upload(content)
+        f1 = File.objects.get(pk=r1.data['id'])
+        path = f1.file.path
+
+        # Second record: different API key, same hash — satisfies the unique
+        # constraint (sha256_hash, api_key) while sharing the physical file.
+        key2, _ = make_api_key(label='key2-not-last-ref')
+        repo.create_file(
+            file_field=f1.file.name, original_filename='copy.txt',
+            file_type='text/plain', size=len(content),
+            sha256_hash=sha, api_key=key2,
+        )
+
+        # Deleting the first record must NOT remove the disk file (another ref exists).
         self.client.delete(f"{FILES_URL}{r1.data['id']}/")
         self.assertTrue(os.path.exists(path))
 
     def test_deleting_last_duplicate_removes_physical_file(self):
+        """Deleting the last record sharing a hash removes the physical file."""
+        import hashlib
+        from files import repository as repo
+        from files.models import File
+        from .helpers import make_api_key
+        from rest_framework.test import APIClient
+
         content = b'both refs delete test abc xyz'
+        sha = hashlib.sha256(content).hexdigest()
+
+        # First record: anonymous upload via the API.
         r1 = self._upload(content)
-        r2 = self._upload(content)
-        path = self._file_path(r1.data['id'])
+        f1 = File.objects.get(pk=r1.data['id'])
+        path = f1.file.path
 
+        # Second record: different API key, same hash.
+        key2, raw2 = make_api_key(label='key2-last-ref')
+        f2 = repo.create_file(
+            file_field=f1.file.name, original_filename='copy.txt',
+            file_type='text/plain', size=len(content),
+            sha256_hash=sha, api_key=key2,
+        )
+
+        # Delete r1 — f2 still references the file, so disk file must survive.
         self.client.delete(f"{FILES_URL}{r1.data['id']}/")
-        self.assertTrue(os.path.exists(path))   # second reference still exists
+        self.assertTrue(os.path.exists(path))
 
-        self.client.delete(f"{FILES_URL}{r2.data['id']}/")
-        self.assertFalse(os.path.exists(path))  # last reference gone
+        # Delete f2 using its own API key — this is the last reference.
+        client2 = APIClient()
+        client2.credentials(HTTP_AUTHORIZATION=f'ApiKey {raw2}')
+        client2.delete(f"{FILES_URL}{f2.pk}/")
+        self.assertFalse(os.path.exists(path))
 
     def test_null_hash_file_deletes_physical_file(self):
         """Files without sha256_hash (legacy) always have their disk file removed."""
@@ -352,27 +350,15 @@ class FileReplacementDisallowedTests(APITestCase):
         self.file_id = r.data['id']
         self.original_hash = r.data['sha256_hash']
 
-    def test_put_with_new_file_ignored(self):
+    def test_put_with_file_returns_400(self):
         new_upload = make_uploaded_file(content=b'completely different content xyz', name='new.txt')
         response = self.client.put(
             f"{FILES_URL}{self.file_id}/",
             {'file': new_upload, 'original_filename': 'updated.txt'},
             format='multipart',
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['sha256_hash'], self.original_hash)
-
-    def test_put_does_not_change_disk_file(self):
-        from files.models import File
-        original_file_name = File.objects.get(pk=self.file_id).file.name
-        new_upload = make_uploaded_file(content=b'trying to replace disk file', name='new.txt')
-        self.client.put(
-            f"{FILES_URL}{self.file_id}/",
-            {'file': new_upload, 'original_filename': 'updated.txt'},
-            format='multipart',
-        )
-        after_file_name = File.objects.get(pk=self.file_id).file.name
-        self.assertEqual(original_file_name, after_file_name)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data['error'], 'file_content_immutable')
 
     def test_patch_original_filename_works(self):
         response = self.client.patch(

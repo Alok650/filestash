@@ -1,10 +1,3 @@
-"""
-Tests for files/views.py — FileViewSet ordering validation and filter composability.
-
-Covers: valid/invalid ordering fields, ordering direction, stable cursor ordering
-with id tiebreaker, and composed filter + ordering + pagination requests.
-"""
-
 from .helpers import APITestCase, make_file
 
 FILES_URL = '/api/files/'
