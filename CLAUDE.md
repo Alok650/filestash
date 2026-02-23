@@ -47,9 +47,9 @@ This is a Django REST Framework API-only backend (no frontend). The single `file
 **Key files in `backend/files/`:**
 - `models.py` — `File` (UUID PK, sha256_hash, api_key FK) and `ApiKey` models
 - `repository.py` — all DB access; views must not build raw ORM queries
-- `crypto.py` — `hash_api_key()` for safe API key storage (SHA-256)
+- `utils.py` — `hash_api_key()` for safe API key storage (SHA-256)
 - `serializers.py` — `FileSerializer` (sha256_hash is read-only)
-- `views.py` — `FileViewSet` with ordering validation and id tiebreaker
+- `file_views.py` — `FileViewSet` with ordering validation and id tiebreaker
 - `filters.py` — `FileFilter` (file_type exact/prefix, date range) + `FileVaultFilterBackend`
 - `pagination.py` — `FileVaultCursorPagination` (count field, clamped page_size)
 - `tests/` — one test module per source file (test_crypto, test_repository, test_pagination, test_filters, test_views, test_serializers)

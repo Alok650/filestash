@@ -1,0 +1,404 @@
+{
+    "info": {
+        "_postman_id": "8d3e2b1c-4f5a-4e8c-9b1d-2a3b4c5d6e7f",
+        "name": "Abnormal File Vault API",
+        "description": "API collection for the Abnormal File Vault coding challenge. Supports file management and API key lifecycle.\n\n### Authentication\n- **API Key**: Pass `Authorization: ApiKey <token>` in the header.\n- **Admin Key**: Pass `Authorization: ApiKey {{adminKey}}` for administrative actions.\n\n### Environment Variables\n- `baseUrl`: Base URL of the API (e.g., `http://localhost:8000`)\n- `apiKey`: Your regular API key token\n- `adminKey`: The admin API key (if configured)",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Management",
+            "item": [
+                {
+                    "name": "Get My Key Info",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/keys/me/",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "keys",
+                                "me",
+                                ""
+                            ]
+                        },
+                        "description": "Returns the authenticated key's info and storage usage."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Endpoints for managing the current API key."
+        },
+        {
+            "name": "Files",
+            "item": [
+                {
+                    "name": "List Files",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/files/?search=&file_type=&ordering=&uploaded_after=&uploaded_before=&page_size=",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "files",
+                                ""
+                            ],
+                            "query": [
+                                {
+                                    "key": "search",
+                                    "value": "",
+                                    "description": "Search by original filename (case-insensitive substring)"
+                                },
+                                {
+                                    "key": "file_type",
+                                    "value": "",
+                                    "description": "Filter by MIME type. Exact match, or prefix match if ends with '/'. Example: 'image/'"
+                                },
+                                {
+                                    "key": "ordering",
+                                    "value": "",
+                                    "description": "Sort by: original_filename, size, uploaded_at. Prefix with '-' for descending."
+                                },
+                                {
+                                    "key": "uploaded_after",
+                                    "value": "",
+                                    "description": "ISO 8601 datetime filter (inclusive lower bound)"
+                                },
+                                {
+                                    "key": "uploaded_before",
+                                    "value": "",
+                                    "description": "ISO 8601 datetime filter (inclusive upper bound)"
+                                },
+                                {
+                                    "key": "page_size",
+                                    "value": "20",
+                                    "description": "Number of results per page (1-100)"
+                                }
+                            ]
+                        },
+                        "description": "List files with support for filtering, search, and cursor-based pagination."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Upload File",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "file",
+                                    "type": "file",
+                                    "src": [],
+                                    "description": "The file content to upload"
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/files/",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "files",
+                                ""
+                            ]
+                        },
+                        "description": "Upload a new file. If the content already exists on disk (detected via SHA-256), the storage is reused (`deduplicated: true`)."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get File Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/files/:id/",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "files",
+                                ":id",
+                                ""
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "",
+                                    "description": "File UUID"
+                                }
+                            ]
+                        },
+                        "description": "Retrieve metadata for a specific file record."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update File Metadata (PATCH)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [],
+                        "body": {
+                            "mode": "json",
+                            "json": {
+                                "original_filename": "updated_name.txt"
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/files/:id/",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "files",
+                                ":id",
+                                ""
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "",
+                                    "description": "File UUID"
+                                }
+                            ]
+                        },
+                        "description": "Update metadata for a file. Note: File content and hash are immutable."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update File Metadata (PUT)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [],
+                        "body": {
+                            "mode": "json",
+                            "json": {
+                                "original_filename": "full_update_name.txt"
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/files/:id/",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "files",
+                                ":id",
+                                ""
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "",
+                                    "description": "File UUID"
+                                }
+                            ]
+                        },
+                        "description": "Fully update a file record. Note: File content and hash are immutable."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete File",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/files/:id/",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "files",
+                                ":id",
+                                ""
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "",
+                                    "description": "File UUID"
+                                }
+                            ]
+                        },
+                        "description": "Permanently delete a file record. Physical disk storage is only removed if this was the last reference to that content hash."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "List Duplicates",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/files/:id/duplicates/",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "files",
+                                ":id",
+                                "duplicates",
+                                ""
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "",
+                                    "description": "File UUID"
+                                }
+                            ]
+                        },
+                        "description": "Returns other files owned by the SAME API key that share this file's content hash."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Endpoints for file lifecycle management."
+        },
+        {
+            "name": "Admin",
+            "item": [
+                {
+                    "name": "Create API Key",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "ApiKey {{adminKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "json",
+                            "json": {
+                                "label": "My Client Key",
+                                "storage_quota_bytes": 1073741824
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/keys/",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "keys",
+                                ""
+                            ]
+                        },
+                        "description": "Create a new API key. Admin authorization required."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Deactivate API Key",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "ApiKey {{adminKey}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/keys/:id/",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "keys",
+                                ":id",
+                                ""
+                            ],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "",
+                                    "description": "API Key UUID"
+                                }
+                            ]
+                        },
+                        "description": "Deactivate an existing API key. Admin authorization required."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Administrative endpoints for managing API keys."
+        }
+    ],
+    "auth": {
+        "type": "apikey",
+        "apikey": [
+            {
+                "key": "value",
+                "value": "ApiKey {{apiKey}}",
+                "type": "string"
+            },
+            {
+                "key": "key",
+                "value": "Authorization",
+                "type": "string"
+            }
+        ]
+    },
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:8000",
+            "type": "string"
+        },
+        {
+            "key": "apiKey",
+            "value": "YOUR_API_KEY_HERE",
+            "type": "string"
+        },
+        {
+            "key": "adminKey",
+            "value": "YOUR_ADMIN_KEY_HERE",
+            "type": "string"
+        }
+    ]
+}

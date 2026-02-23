@@ -24,16 +24,30 @@ Before you begin, ensure you have installed:
 ## 🛠️ Installation & Setup
 
 ### Quick start (Makefile)
+ 
+ Requires **Python 3.11+** and **make**.
+ 
+ ```bash
+cp .env.example .env  # set your local environment variables
+make setup            # create venv, install deps, run migrations
+make run              # start dev server at http://localhost:8000
+make test             # run full test suite
+ ```
+ 
+ Run `make help` to see all available targets.
+ 
+### ⚙️ Environment Configuration
 
-Requires **Python 3.11+** and **make**.
+The application uses environment variables for security and limits. Copy the example file and modify the values:
 
 ```bash
-make setup       # create venv, install deps, run migrations
-make run         # start dev server at http://localhost:8000
-make test        # run full test suite
+cp .env.example .env
 ```
 
-Run `make help` to see all available targets.
+Key variables in `.env`:
+- `ADMIN_API_KEY`: The master key for administrative actions.
+- `DJANGO_DEBUG`: Set to `True` for development.
+- `ANONYMOUS_STORAGE_QUOTA_MB`: Global limit for files without an API key.
 
 ### Using Docker
 
@@ -47,6 +61,7 @@ docker-compose up --build
 cd backend
 python3.11 -m venv venv
 source venv/bin/activate      # Windows: venv\Scripts\activate
+pip install python-dotenv     # required for .env support
 pip install -r requirements.txt
 mkdir -p data media staticfiles
 python manage.py migrate
@@ -103,29 +118,41 @@ python manage.py test files.tests.test_pagination.PaginationEnvelopeTests
 python manage.py test files.tests.test_pagination.PaginationEnvelopeTests.test_default_page_size_is_20
 ```
 
+### 🛡️ Testing Limits (Rate Limiting & Quotas)
+
+A utility script is provided to verify that rate limits and storage quotas are working as expected.
+
+```bash
+# Ensure your ADMIN_API_KEY is set in .env, then run:
+python scripts/test_api_limits.py  # Test rate limits & quotas
+python scripts/test_api_dedup.py   # Test deduplication & cleanup
+python scripts/test_api_search.py  # Test search, filtering & isolation
+```
+
 ### Test modules
 
 | File | Source module | What's covered |
 |------|--------------|----------------|
-| `tests/test_crypto.py` | `crypto.py` | `hash_api_key()` — output format, determinism, collision resistance |
+| `tests/test_utils.py` | `utils.py` | `hash_api_key()` — output format, determinism, collision resistance |
 | `tests/test_repository.py` | `repository.py` | ApiKey + File CRUD, dedup helpers, quota aggregation, reference-counted deletion |
 | `tests/test_pagination.py` | `pagination.py` | Cursor envelope shape, cursor navigation, page_size clamping, filtered count |
 | `tests/test_filters.py` | `filters.py` | Filename search, file_type exact/prefix, date range, invalid datetime → 400 |
-| `tests/test_views.py` | `views.py` | Ordering validation (valid fields, 400 on invalid, error format), composability |
+| `tests/test_views.py` | `file_views.py` | Ordering validation (valid fields, 400 on invalid, error format), composability |
 | `tests/test_serializers.py` | `serializers.py` | `sha256_hash` in list/detail responses, null hash, read-only enforcement |
 
 ## 🗄️ Project Structure
 
 ```
-file-hub/
 ├── backend/                # Django backend
 │   ├── files/             # Main application
 │   │   ├── models.py      # Data models
-│   │   ├── views.py       # API views
+│   │   ├── file_views.py  # API views
 │   │   ├── urls.py        # URL routing
 │   │   └── serializers.py # Data serialization
 │   ├── core/              # Project settings
 │   └── requirements.txt   # Python dependencies
+├── api/                    # API definitions (Postman collection)
+├── scripts/                # Verification scripts
 └── docker-compose.yml    # Docker composition
 ```
 
@@ -144,7 +171,7 @@ file-hub/
    ```
 
 2. **File Upload Issues**
-   - Maximum file size: 10MB
+   - Maximum file size: 50MB
    - Ensure proper permissions on media directory
    - Check network tab for detailed error messages
 
