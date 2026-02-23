@@ -31,15 +31,12 @@ class _BaseApiKeyThrottle(SimpleRateThrottle):
         result = super().allow_request(request, view)
 
         remaining = max(0, self.num_requests - len(self.history))
-        reset = (
-            int(self.history[-1] + self.duration)
-            if self.history
-            else int(self.now + self.duration)
-        )
-        # Store on the underlying Django request for RateLimitHeadersMiddleware.
+        reset = int((self.history[-1] if self.history else self.now) + self.duration)
+
         django_request = getattr(request, '_request', request)
-        existing = getattr(django_request, '_rate_limit_info', None)
-        if existing is None or remaining < existing['remaining']:
+        info = getattr(django_request, '_rate_limit_info', None)
+
+        if info is None or remaining < info['remaining']:
             django_request._rate_limit_info = {
                 'limit': self.num_requests,
                 'remaining': remaining,

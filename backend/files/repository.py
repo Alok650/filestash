@@ -24,10 +24,10 @@ _SHA256_RE = re.compile(r'^[0-9a-f]{64}$')
 _MIME_RE = re.compile(r'^[a-zA-Z0-9!#$&\-^_]{1,50}/[a-zA-Z0-9!#$&\-^_.+]{1,50}$', re.ASCII)
 
 
-# --- Read helpers ---
+# Read helpers
 
 def admin_get_file_by_id(file_id: str | uuid.UUID) -> Optional[File]:
-    """Return the File with file_id or None. No ownership check — admin use only."""
+    """Return the File with file_id or None."""
     try:
         return File.objects.get(pk=file_id)
     except File.DoesNotExist:
@@ -59,10 +59,7 @@ def get_all_files(*, _admin_confirmed: bool = False) -> QuerySet:
 
 
 def get_queryset_for_auth(auth: Union[_AdminSentinel, ApiKey, None]) -> QuerySet:
-    """Return the correct queryset for the given auth context.
-
-    ADMIN_AUTH → all files; ApiKey → that key's files; None → anonymous pool.
-    """
+    """Return the correct queryset for the given auth context."""
     if auth is ADMIN_AUTH:
         return File.objects.all()
     if isinstance(auth, ApiKey):
@@ -98,7 +95,7 @@ def count_references(
     sha256_hash: str,
     exclude_id: str | uuid.UUID | None = None,
 ) -> int:
-    """Count File records across all keys sharing sha256_hash, optionally excluding one."""
+    """Count File records across all keys sharing sha256_hash."""
     if not sha256_hash:
         return 0
     qs = File.objects.filter(sha256_hash=sha256_hash)
@@ -113,7 +110,7 @@ def get_storage_used_bytes(api_key: Optional[ApiKey]) -> int:
     return result['total'] if result['total'] is not None else 0
 
 
-# --- Write helpers ---
+# Write helpers
 
 def create_file(
     *,
@@ -154,7 +151,7 @@ def create_file(
 
 
 def update_file(file: File, *, original_filename: Optional[str] = None) -> File:
-    """Update original_filename on file. Returns file unchanged if no args given."""
+    """Update original_filename on file."""
     if original_filename is None:
         return file
     original_filename = original_filename.strip()
@@ -177,7 +174,7 @@ def delete_file(file: File, *, delete_disk_file: bool) -> None:
     file.delete()
 
 
-# --- ApiKey helpers ---
+# ApiKey helpers
 
 def get_api_key_by_token(token: str) -> Optional[ApiKey]:
     """Return an active ApiKey matching token, or None."""

@@ -18,7 +18,6 @@ logger = logging.getLogger(__name__)
 
 VALID_ORDERING_FIELDS = ['original_filename', 'size', 'uploaded_at']
 
-# File types that can execute or render as markup in browsers.
 _BLOCKED_CONTENT_TYPES = frozenset({
     'text/html', 'application/xhtml+xml', 'image/svg+xml',
     'application/javascript', 'text/javascript',
@@ -54,11 +53,9 @@ class FileViewSet(viewsets.ModelViewSet):
 
         queryset = super().filter_queryset(queryset)
 
-        # Append 'id' as a tiebreaker for stable cursor pagination.
         current_ordering = list(queryset.query.order_by)
         if not current_ordering:
-            meta = queryset.model._meta.ordering
-            current_ordering = list(meta) if meta else ['-uploaded_at']
+            current_ordering = list(queryset.model._meta.ordering or ['-uploaded_at'])
 
         if 'id' not in current_ordering and '-id' not in current_ordering:
             current_ordering.append('id')
@@ -82,12 +79,8 @@ class FileViewSet(viewsets.ModelViewSet):
         is_admin = request.auth is ADMIN_AUTH
 
         if not is_admin:
-            if api_key:
-                used = repository.get_storage_used_bytes(api_key)
-                quota = api_key.storage_quota_bytes
-            else:
-                used = repository.get_storage_used_bytes(None)
-                quota = settings.ANONYMOUS_STORAGE_QUOTA_MB * 1024 * 1024
+            quota = getattr(api_key, 'storage_quota_bytes', settings.ANONYMOUS_STORAGE_QUOTA_MB * 1024 * 1024)
+            used = repository.get_storage_used_bytes(api_key)
 
             if used + file_obj.size > quota:
                 logger.warning(
@@ -95,19 +88,12 @@ class FileViewSet(viewsets.ModelViewSet):
                     getattr(api_key, 'id', 'anonymous'), used, quota, file_obj.size,
                 )
                 return Response(
-                    {
-                        'error': 'storage_quota_exceeded',
-                        'used_bytes': used,
-                        'quota_bytes': quota,
-                    },
+                    {'error': 'storage_quota_exceeded', 'used_bytes': used, 'quota_bytes': quota},
                     status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
                 )
 
         sha256 = compute_sha256(file_obj)
 
-        # Reuse the physical file if the content already exists anywhere.
-        # Always create a new DB record so each upload gets its own id,
-        # original_filename, and uploaded_at.
         existing = repository.get_file_by_hash(sha256)
         deduplicated = existing is not None
         file_source = existing.file.name if deduplicated else file_obj
@@ -138,9 +124,7 @@ class FileViewSet(viewsets.ModelViewSet):
                 {'error': 'file_content_immutable'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        kwargs.pop('partial', False)
         instance = self.get_object()
-        # sha256_hash is in read_only_fields — serializer silently ignores it.
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)

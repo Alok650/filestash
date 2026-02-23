@@ -16,7 +16,6 @@ def custom_exception_handler(exc, context):
             }
             response['Retry-After'] = str(retry_after)
         elif isinstance(response.data, dict) and set(response.data.keys()) == {'detail'}:
-            # Normalize DRF's default {"detail": "..."} envelope to {"error": "..."}.
             response.data = {'error': str(response.data['detail'])}
 
     return response

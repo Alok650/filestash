@@ -10,10 +10,6 @@ KEYS_URL = '/api/keys/'
 ADMIN_KEY = 'test-admin-secret-key-for-tests'
 
 
-# ---------------------------------------------------------------------------
-# Authentication class behaviour
-# ---------------------------------------------------------------------------
-
 @override_settings(ADMIN_API_KEY=ADMIN_KEY)
 class ApiKeyAuthenticationTests(APITestCase):
     """request.auth is set correctly based on the Authorization header."""
@@ -58,10 +54,6 @@ class ApiKeyAuthenticationTests(APITestCase):
         response = self.client.get(FILES_URL)
         self.assertEqual(response.status_code, 200)
 
-
-# ---------------------------------------------------------------------------
-# Key management: POST /api/keys/
-# ---------------------------------------------------------------------------
 
 @override_settings(ADMIN_API_KEY=ADMIN_KEY)
 class ApiKeyCreateTests(APITestCase):
@@ -127,10 +119,6 @@ class ApiKeyCreateUnconfiguredTests(APITestCase):
         self.assertEqual(response.data.get('error'), 'admin_key_not_configured')
 
 
-# ---------------------------------------------------------------------------
-# Key management: GET /api/keys/me/
-# ---------------------------------------------------------------------------
-
 class ApiKeyMeTests(APITestCase):
     """Authenticated key holders can query their own key info."""
 
@@ -172,10 +160,6 @@ class ApiKeyMeTests(APITestCase):
         response = self.client.get(f'{KEYS_URL}me/')
         self.assertEqual(response.status_code, 401)
 
-
-# ---------------------------------------------------------------------------
-# Key management: DELETE /api/keys/{id}/
-# ---------------------------------------------------------------------------
 
 @override_settings(ADMIN_API_KEY=ADMIN_KEY)
 class ApiKeyDeactivateTests(APITestCase):
@@ -222,10 +206,6 @@ class ApiKeyDeactivateUnconfiguredTests(APITestCase):
         response = self.client.delete(f'{KEYS_URL}{target.id}/')
         self.assertEqual(response.status_code, 503)
 
-
-# ---------------------------------------------------------------------------
-# Key-scoped file visibility (Task 4.3)
-# ---------------------------------------------------------------------------
 
 class FileScopingTests(APITestCase):
     """Each key sees only its own files; 404 on cross-key access."""
@@ -291,10 +271,6 @@ class AdminFileScopingTests(APITestCase):
         self.assertIn(str(self.file_a.pk), ids)
         self.assertIn(str(self.anon_file.pk), ids)
 
-
-# ---------------------------------------------------------------------------
-# File ownership on upload (Task 4.4)
-# ---------------------------------------------------------------------------
 
 class FileOwnershipTests(APITestCase):
     """Uploaded files are attributed to the requesting key."""

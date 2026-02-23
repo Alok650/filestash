@@ -13,10 +13,6 @@ from files.repository import ADMIN_AUTH
 from .helpers import VALID_HASH, VALID_MIME, make_api_key, make_file, make_uploaded_file
 
 
-# ---------------------------------------------------------------------------
-# ApiKey — create
-# ---------------------------------------------------------------------------
-
 class CreateApiKeyTests(TestCase):
 
     def test_stores_hash_not_plaintext(self):
@@ -68,10 +64,6 @@ class CreateApiKeyTests(TestCase):
             repository.create_api_key(label='test', key='tok', storage_quota_bytes=-1)
 
 
-# ---------------------------------------------------------------------------
-# ApiKey — read
-# ---------------------------------------------------------------------------
-
 class GetApiKeyByTokenTests(TestCase):
 
     def test_finds_active_key(self):
@@ -101,10 +93,6 @@ class GetApiKeyByIdTests(TestCase):
         self.assertIsNone(repository.get_api_key_by_id(uuid.uuid4()))
 
 
-# ---------------------------------------------------------------------------
-# ApiKey — deactivate
-# ---------------------------------------------------------------------------
-
 class DeactivateApiKeyTests(TestCase):
 
     def test_sets_is_active_false(self):
@@ -118,10 +106,6 @@ class DeactivateApiKeyTests(TestCase):
         repository.deactivate_api_key(key)
         self.assertTrue(ApiKey.objects.filter(pk=key.pk).exists())
 
-
-# ---------------------------------------------------------------------------
-# File — create
-# ---------------------------------------------------------------------------
 
 class CreateFileTests(TestCase):
 
@@ -233,10 +217,6 @@ class CreateFileTests(TestCase):
         self.assertEqual(f2.file.name, existing_path)
         self.assertNotEqual(f2.pk, f1.pk)
 
-
-# ---------------------------------------------------------------------------
-# File — read
-# ---------------------------------------------------------------------------
 
 class AdminGetFileByIdTests(TestCase):
 
@@ -352,10 +332,6 @@ class GetQuerysetForAuthTests(TestCase):
         self.assertIn(anon_file, qs)
 
 
-# ---------------------------------------------------------------------------
-# File — hash / deduplication helpers
-# ---------------------------------------------------------------------------
-
 class GetFileByHashTests(TestCase):
 
     def test_returns_matching_file(self):
@@ -461,10 +437,6 @@ class CountReferencesTests(TestCase):
         self.assertEqual(repository.count_references(''), 0)
 
 
-# ---------------------------------------------------------------------------
-# File — storage quota
-# ---------------------------------------------------------------------------
-
 class GetStorageUsedBytesTests(TestCase):
 
     def test_sums_sizes_for_key(self):
@@ -496,10 +468,6 @@ class GetStorageUsedBytesTests(TestCase):
         self.assertEqual(repository.get_storage_used_bytes(None), 10)
 
 
-# ---------------------------------------------------------------------------
-# File — update
-# ---------------------------------------------------------------------------
-
 class UpdateFileTests(TestCase):
 
     def test_updates_original_filename(self):
@@ -524,10 +492,6 @@ class UpdateFileTests(TestCase):
         self.assertEqual(f.size, 42)
         self.assertEqual(f.api_key, key)
 
-
-# ---------------------------------------------------------------------------
-# File — delete
-# ---------------------------------------------------------------------------
 
 class DeleteFileTests(TestCase):
 

@@ -11,10 +11,6 @@ from .helpers import APITestCase, make_file, make_uploaded_file
 FILES_URL = '/api/files/'
 
 
-# ---------------------------------------------------------------------------
-# First upload behaviour
-# ---------------------------------------------------------------------------
-
 class FirstUploadTests(APITestCase):
     """First upload of new content writes to disk and sets deduplicated=false."""
 
@@ -42,10 +38,6 @@ class FirstUploadTests(APITestCase):
         f = File.objects.get(pk=r.data['id'])
         self.assertTrue(os.path.exists(f.file.path))
 
-
-# ---------------------------------------------------------------------------
-# Duplicate upload
-# ---------------------------------------------------------------------------
 
 class DuplicateUploadTests(APITestCase):
     """Uploading identical content a second time reuses the physical file."""
@@ -98,10 +90,6 @@ class DuplicateUploadTests(APITestCase):
         self.assertEqual(len(matches), 1)
 
 
-# ---------------------------------------------------------------------------
-# Empty-file deduplication edge case
-# ---------------------------------------------------------------------------
-
 class EmptyFileDeduplicationTests(APITestCase):
     """Two uploads of an empty file must be treated as duplicates."""
 
@@ -118,10 +106,6 @@ class EmptyFileDeduplicationTests(APITestCase):
         self.assertTrue(r2.data['deduplicated'])
         self.assertEqual(r1.data['sha256_hash'], r2.data['sha256_hash'])
 
-
-# ---------------------------------------------------------------------------
-# /duplicates/ endpoint
-# ---------------------------------------------------------------------------
 
 class DuplicatesEndpointTests(APITestCase):
     """/duplicates/ lists other files with the same hash (same api_key scope)."""
@@ -185,10 +169,6 @@ class DuplicatesEndpointTests(APITestCase):
         self.assertEqual(response.status_code, 404)
 
 
-# ---------------------------------------------------------------------------
-# /duplicates/ cross-key isolation
-# ---------------------------------------------------------------------------
-
 class DuplicatesKeyIsolationTests(TestCase):
     """Duplicates endpoint only surfaces files owned by the same API key."""
 
@@ -223,11 +203,6 @@ class DuplicatesKeyIsolationTests(TestCase):
         self.assertEqual(dup_qs.count(), 0)
         self.assertNotIn(file_b.pk, dup_qs.values_list('pk', flat=True))
 
-
-
-# ---------------------------------------------------------------------------
-# Reference-counted deletion
-# ---------------------------------------------------------------------------
 
 class ReferenceCountedDeletionTests(APITestCase):
     """Physical file is deleted only when the last DB reference is removed."""
@@ -332,10 +307,6 @@ class ReferenceCountedDeletionTests(APITestCase):
         client.delete(f"{FILES_URL}{file.pk}/")
         self.assertFalse(os.path.exists(path))
 
-
-# ---------------------------------------------------------------------------
-# File content replacement disallowed on PUT / PATCH
-# ---------------------------------------------------------------------------
 
 class FileReplacementDisallowedTests(APITestCase):
     """PUT and PATCH cannot replace file content after initial upload."""
