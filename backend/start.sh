@@ -1,14 +1,32 @@
 #!/bin/sh
 
-# Ensure data directory exists and has proper permissions
-mkdir -p /app/data
-chmod -R 777 /app/data
+if [ -f .env ]; then
+    export $(echo $(grep -v '^#' .env | xargs))
+elif [ -f ../.env ]; then
+    export $(echo $(grep -v '^#' ../.env | xargs))
+fi
 
-# Run migrations
+PYTHON=$(which python3 || which python)
+
+mkdir -p ./data
+chmod -R 777 ./data 2>/dev/null || true
+
 echo "Running migrations..."
-python manage.py makemigrations
-python manage.py migrate
+$PYTHON manage.py migrate --noinput
 
-# Start server
-echo "Starting server..."
-gunicorn --bind 0.0.0.0:8000 core.wsgi:application 
+if [ -z "$ADMIN_API_KEY" ]; then
+    echo "WARNING: ADMIN_API_KEY is not set. You will not be able to manage API keys."
+fi
+
+if command -v gunicorn >/dev/null 2>&1; then
+    echo "Starting server with Gunicorn..."
+    exec gunicorn --bind 0.0.0.0:8000 \
+        --workers 4 \
+        --timeout 120 \
+        --access-logfile - \
+        --error-logfile - \
+        core.wsgi:application
+else
+    echo "Gunicorn not found, falling back to manage.py runserver..."
+    exec $PYTHON manage.py runserver 0.0.0.0:8000
+fi

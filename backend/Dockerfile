@@ -1,4 +1,9 @@
-FROM python:3.10
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /app
 
@@ -10,24 +15,21 @@ RUN apt-get update && \
 
 # Install Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir --trusted-host pypi.org --trusted-host files.pythonhosted.org -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy project files
 COPY . .
 
-# Create necessary directories
-RUN mkdir -p media staticfiles data
+# Create necessary directories and set permissions
+RUN mkdir -p media staticfiles data && \
+    chmod -R 777 media staticfiles data
 
-# Set permissions
-RUN chmod -R 777 data media staticfiles
-
-# Collect static files
-RUN python manage.py collectstatic --noinput
+# Collect static files (requires a dummy SECRET_KEY if not in environment)
+RUN DJANGO_SECRET_KEY=build-time-only-key python manage.py collectstatic --noinput
 
 # Make start script executable
-COPY start.sh .
 RUN chmod +x start.sh
 
 EXPOSE 8000
 
-CMD ["./start.sh"] 
+CMD ["./start.sh"]
