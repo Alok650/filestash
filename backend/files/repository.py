@@ -16,9 +16,6 @@ from .models import ApiKey, File
 
 
 class _AdminSentinel:
-    """Singleton placed in request.auth to represent admin-level access.
-    Using a typed sentinel (instead of a string or bool) makes isinstance()
-    checks unambiguous — no ApiKey value can accidentally match it."""
     __slots__ = ()
 
     def __repr__(self) -> str:
