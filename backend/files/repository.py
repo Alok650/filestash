@@ -1,17 +1,24 @@
 from __future__ import annotations
 
+import logging
 import re
 import uuid
 from typing import Optional, Union
+
+logger = logging.getLogger(__name__)
 
 from django.core.files.uploadedfile import UploadedFile
 from django.db.models import QuerySet, Sum
 
 from .utils import hash_api_key
-from .models import DEFAULT_STORAGE_QUOTA_BYTES, ApiKey, File
+from .constants import DEFAULT_STORAGE_QUOTA_BYTES
+from .models import ApiKey, File
 
 
 class _AdminSentinel:
+    """Singleton placed in request.auth to represent admin-level access.
+    Using a typed sentinel (instead of a string or bool) makes isinstance()
+    checks unambiguous — no ApiKey value can accidentally match it."""
     __slots__ = ()
 
     def __repr__(self) -> str:
@@ -19,6 +26,9 @@ class _AdminSentinel:
 
 
 ADMIN_AUTH = _AdminSentinel()
+
+# Type alias for the three possible values of request.auth in this project.
+AuthContext = Union[_AdminSentinel, ApiKey, None]
 
 _SHA256_RE = re.compile(r'^[0-9a-f]{64}$')
 _MIME_RE = re.compile(r'^[a-zA-Z0-9!#$&\-^_]{1,50}/[a-zA-Z0-9!#$&\-^_.+]{1,50}$', re.ASCII)
@@ -58,7 +68,7 @@ def get_all_files(*, _admin_confirmed: bool = False) -> QuerySet:
     return File.objects.all()
 
 
-def get_queryset_for_auth(auth: Union[_AdminSentinel, ApiKey, None]) -> QuerySet:
+def get_queryset_for_auth(auth: AuthContext) -> QuerySet:
     """Return the correct queryset for the given auth context."""
     if auth is ADMIN_AUTH:
         return File.objects.all()
@@ -170,7 +180,7 @@ def delete_file(file: File, *, delete_disk_file: bool) -> None:
         try:
             file.file.delete(save=False)
         except OSError:
-            pass
+            logger.warning("Could not delete disk file: id=%s path=%s", file.pk, file.file.name)
     file.delete()
 
 

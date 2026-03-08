@@ -1,10 +1,16 @@
+import logging
 import math
 
 from rest_framework.views import exception_handler
 
+logger = logging.getLogger(__name__)
+
 
 def custom_exception_handler(exc, context):
     response = exception_handler(exc, context)
+
+    if response is None:
+        logger.exception("Unhandled exception in %s", context.get('view'))
 
     if response is not None:
         if response.status_code == 429:

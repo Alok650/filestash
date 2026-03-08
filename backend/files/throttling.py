@@ -1,5 +1,9 @@
 from rest_framework.throttling import SimpleRateThrottle
 
+from .constants import (
+    AUTHENTICATED_RATE_PER_SECOND, ANONYMOUS_RATE_PER_SECOND,
+    AUTHENTICATED_RATE_PER_MINUTE, ANONYMOUS_RATE_PER_MINUTE,
+)
 from .models import ApiKey
 from .repository import ADMIN_AUTH
 
@@ -48,11 +52,11 @@ class _BaseApiKeyThrottle(SimpleRateThrottle):
 
 class ApiKeySecondRateThrottle(_BaseApiKeyThrottle):
     scope = 'api_key_second'
-    authenticated_rate = '10/second'
-    anonymous_rate = '2/second'
+    authenticated_rate = AUTHENTICATED_RATE_PER_SECOND
+    anonymous_rate = ANONYMOUS_RATE_PER_SECOND
 
 
 class ApiKeyMinuteRateThrottle(_BaseApiKeyThrottle):
     scope = 'api_key_minute'
-    authenticated_rate = '300/minute'
-    anonymous_rate = '30/minute'
+    authenticated_rate = AUTHENTICATED_RATE_PER_MINUTE
+    anonymous_rate = ANONYMOUS_RATE_PER_MINUTE

@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from .models import ApiKey, File, DEFAULT_STORAGE_QUOTA_BYTES
+from .constants import DEFAULT_STORAGE_QUOTA_BYTES
+from .models import ApiKey, File
 
 
 class FileSerializer(serializers.ModelSerializer):

@@ -8,6 +8,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
 
 from . import repository
+from .constants import BLOCKED_CONTENT_TYPES, VALID_ORDERING_FIELDS
 from .filters import FileFilter, FileVaultFilterBackend
 from .models import ApiKey
 from .repository import ADMIN_AUTH
@@ -15,13 +16,6 @@ from .serializers import FileSerializer
 from .utils import compute_sha256
 
 logger = logging.getLogger(__name__)
-
-VALID_ORDERING_FIELDS = ['original_filename', 'size', 'uploaded_at']
-
-_BLOCKED_CONTENT_TYPES = frozenset({
-    'text/html', 'application/xhtml+xml', 'image/svg+xml',
-    'application/javascript', 'text/javascript',
-})
 
 
 class FileViewSet(viewsets.ModelViewSet):
@@ -69,7 +63,7 @@ class FileViewSet(viewsets.ModelViewSet):
                 {'error': 'no_file_provided'}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        if file_obj.content_type in _BLOCKED_CONTENT_TYPES:
+        if file_obj.content_type in BLOCKED_CONTENT_TYPES:
             return Response(
                 {'error': 'file_type_not_allowed', 'file_type': file_obj.content_type},
                 status=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,

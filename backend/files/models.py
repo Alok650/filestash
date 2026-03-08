@@ -4,7 +4,7 @@ import uuid
 
 from django.db import models
 
-DEFAULT_STORAGE_QUOTA_BYTES = 1_073_741_824  # 1 GiB
+from .constants import DEFAULT_STORAGE_QUOTA_BYTES
 
 
 def file_upload_path(instance, filename: str) -> str:
