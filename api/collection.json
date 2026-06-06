@@ -1,8 +1,8 @@
 {
     "info": {
         "_postman_id": "8d3e2b1c-4f5a-4e8c-9b1d-2a3b4c5d6e7f",
-        "name": "Abnormal File Vault API",
-        "description": "API collection for the Abnormal File Vault coding challenge. Supports file management and API key lifecycle.\n\n### Authentication\n- **API Key**: Pass `Authorization: ApiKey <token>` in the header.\n- **Admin Key**: Pass `Authorization: ApiKey {{adminKey}}` for administrative actions.\n\n### Environment Variables\n- `baseUrl`: Base URL of the API (e.g., `http://localhost:8000`)\n- `apiKey`: Your regular API key token\n- `adminKey`: The admin API key (if configured)",
+        "name": "Filestash API",
+        "description": "API collection for the Filestash API. Supports file management and API key lifecycle.\n\n### Authentication\n- **API Key**: Pass `Authorization: ApiKey <token>` in the header.\n- **Admin Key**: Pass `Authorization: ApiKey {{adminKey}}` for administrative actions.\n\n### Environment Variables\n- `baseUrl`: Base URL of the API (e.g., `http://localhost:8000`)\n- `apiKey`: Your regular API key token\n- `adminKey`: The admin API key (if configured)",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "item": [
